@@ -50,6 +50,12 @@ def clean_python_cache(root: Path) -> None:
         pyc_file.unlink(missing_ok=True)
 
 
+def clean_python_packaging_artifacts() -> None:
+    shutil.rmtree(PYTHON_PACKAGE_DIR / "build", ignore_errors=True)
+    for egg_info in (PYTHON_PACKAGE_DIR / "src").glob("*.egg-info"):
+        shutil.rmtree(egg_info, ignore_errors=True)
+
+
 def update_formula(version: str, sha256: str) -> None:
     formula = FORMULA_PATH.read_text()
     formula = re.sub(
@@ -68,6 +74,7 @@ def main() -> None:
 
     clean_python_cache(ROOT / "src")
     clean_python_cache(PYTHON_PACKAGE_DIR / "src")
+    clean_python_packaging_artifacts()
     run([sys.executable, "scripts/sync_python_vendor.py"], cwd=ROOT)
     run(["npm", "run", "check"], cwd=ROOT)
 
@@ -78,7 +85,7 @@ def main() -> None:
     tarball_path = ROOT / tarball_name
     npm_target = NPM_DIST_DIR / tarball_name
     if npm_target.exists():
-      npm_target.unlink()
+        npm_target.unlink()
     shutil.move(str(tarball_path), npm_target)
     npm_sha256 = sha256_file(npm_target)
 

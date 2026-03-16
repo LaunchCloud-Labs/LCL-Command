@@ -1,3 +1,5 @@
 dist/
 __pycache__/
 *.pyc
+packaging/python/build/
+packaging/python/src/*.egg-info/

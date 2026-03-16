@@ -2,7 +2,7 @@ class LclCommand < Formula
   desc "LaunchCloud Labs installable Mission Control client"
   homepage "https://www.launchcloudlabs.com/"
   url "https://github.com/LaunchCloud-Labs/LCL-Command/releases/download/v0.2.0/lcl-command-0.2.0.tgz"
-  sha256 "f2c044b5113fdc1f5e2b8d12708d8dc022d64b7b82695a60b837b8247c530d25"
+  sha256 "c3f828a214286168aa96c5f99b24a2801c2ce6bc37e5a857aeeb5ec3e897bea1"
   license "UNLICENSED"
 
   depends_on "node"

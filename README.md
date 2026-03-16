@@ -26,6 +26,12 @@ lcl-command help
 
 ## npm
 
+Public release asset install:
+
+```bash
+npm install -g https://github.com/LaunchCloud-Labs/LCL-Command/releases/download/v0.2.0/lcl-command-0.2.0.tgz
+```
+
 Local packaging:
 
 ```bash
@@ -46,7 +52,15 @@ Global install shape:
 npm install -g lcl-command
 ```
 
+That plain package-name install is reserved for the npm registry publish step once registry credentials are configured.
+
 ## pip
+
+Public release asset install:
+
+```bash
+pip install https://github.com/LaunchCloud-Labs/LCL-Command/releases/download/v0.2.0/lcl_command-0.2.0-py3-none-any.whl
+```
 
 A thin Python wrapper is included under `packaging/python/`. It bundles the Node client and launches it with the local `node` runtime.
 
@@ -61,6 +75,12 @@ lcl-command help
 ## Homebrew
 
 A formula is included under `packaging/homebrew/lcl-command.rb`.
+
+Live repo install:
+
+```bash
+brew install LaunchCloud-Labs/LCL-Command/lcl-command
+```
 
 It is already pinned to the current `0.2.0` npm tarball checksum. To publish it broadly:
 
@@ -89,3 +109,5 @@ For employee rollout, the client first uses the built-in macOS `expect` runtime 
 ## Release notes
 
 This packaging layer is intentionally built around the Node reference client so npm, pip, and Homebrew stay aligned while the SSH handoff and employee rollout are finalized.
+
+The GitHub release channel is live now. Public npm and PyPI registry publication still require registry credentials or trusted-publisher setup.
