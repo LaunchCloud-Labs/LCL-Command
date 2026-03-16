@@ -1,8 +1,8 @@
 class LclCommand < Formula
   desc "LaunchCloud Labs installable Mission Control client"
   homepage "https://www.launchcloudlabs.com/"
-  url "https://registry.npmjs.org/lcl-command/-/lcl-command-0.3.0.tgz"
-  sha256 "580ddf1c492fd3e9a9451fd45fc91fa2e917868b17007f60fca98470b837ae25"
+  url "https://registry.npmjs.org/lcl-command/-/lcl-command-0.4.0.tgz"
+  sha256 "335bc414720271bf5797de8b8bd45d807a4b658e5bfc906e52846c6303249058"
   license "UNLICENSED"
 
   depends_on "node"

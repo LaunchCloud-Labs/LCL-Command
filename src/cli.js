@@ -109,6 +109,25 @@ function commandExists(command) {
   return null;
 }
 
+function runInteractive(command, args) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, {
+      stdio: 'inherit',
+      env: process.env,
+      shell: false
+    });
+
+    child.on('error', reject);
+    child.on('exit', (code) => {
+      if (code === 0) {
+        resolve();
+        return;
+      }
+      reject(new Error(`${path.basename(command)} exited with code ${code || 1}.`));
+    });
+  });
+}
+
 function spawnPythonSshHelper({ user, host, password }) {
   const pythonBin = commandExists('python3');
   if (!pythonBin) {
@@ -258,6 +277,7 @@ function printHelp() {
   console.log('    lcl-command shell              Connect to company server');
   console.log('    lcl-command status             Show session info');
   console.log('    lcl-command console            Project Arbiter console');
+  console.log('    lcl-command deploy             Deploy wizard on approved shells');
   console.log('    lcl-command logout             Sign out');
   console.log('    lcl-command update             How to update this tool');
   console.log('    lcl-command version            Show version');
@@ -407,6 +427,14 @@ async function cmdConsole() {
   console.log('Use the local `lcl-console` command on the host machine for now.');
 }
 
+async function cmdDeploy() {
+  const localDeployBin = commandExists('lcl-deploy');
+  if (!localDeployBin) {
+    throw new Error('Deploy mode is available only on approved LaunchCloud shell environments where `lcl-deploy` is installed.');
+  }
+  await runInteractive(localDeployBin, ['wizard']);
+}
+
 function cmdUpdate() {
   console.log('');
   console.log('  \x1b[1mUpdate lcl-command\x1b[0m');
@@ -446,6 +474,9 @@ function cmdVersion() {
         break;
       case 'console':
         await cmdConsole();
+        break;
+      case 'deploy':
+        await cmdDeploy();
         break;
       case 'logout':
         await cmdLogout();

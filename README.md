@@ -6,9 +6,11 @@ Installable LaunchCloud Labs client for employee portal login, Mission Control a
 
 `lcl-command` is now a working MVP:
 
+- running `lcl-command` with no subcommand signs in if needed and then connects automatically
 - `login` authenticates against the employee portal bridge with email + PIN
 - `status` validates the saved session
 - `shell` can now perform autonomous SSH handoff when the portal bridge is configured with runtime SSH credentials
+- `deploy` opens a guided deploy wizard that wraps the LCL deploy rail
 - `console` is the future Project Arbiter entry point
 
 When the SSH bridge is not configured yet, `shell` falls back to Mission Control guidance.
@@ -19,6 +21,7 @@ When the SSH bridge is not configured yet, `shell` falls back to Mission Control
 lcl-command login
 lcl-command status
 lcl-command shell
+lcl-command deploy
 lcl-command console
 lcl-command logout
 lcl-command help
@@ -76,17 +79,38 @@ lcl-command help
 
 A formula is included under `packaging/homebrew/lcl-command.rb`.
 
-Live repo install:
+Live tap install:
 
 ```bash
-brew install LaunchCloud-Labs/LCL-Command/lcl-command
+brew tap LaunchCloud-Labs/lcl-command
+brew install lcl-command
 ```
 
-It is already pinned to the current `0.2.0` npm tarball checksum. To publish it broadly:
+## Deploy wizard
 
-1. Publish the matching `lcl-command@0.2.0` npm tarball.
-2. Keep the packaged contents aligned with the checksum in the formula.
-3. `brew install ./packaging/homebrew/lcl-command.rb`
+`lcl-command deploy` launches the guided deploy flow.
+
+Normal mode:
+
+```bash
+lcl-command deploy
+```
+
+- default demo uploads target `public_html/demo/<name>`
+- the wizard can list existing demo entries and let the user choose or create a subdirectory
+
+Advanced mode:
+
+- available only from the wizard's advanced menu
+- requires the four-digit unlock code `1472`
+- allows guided uploads to broader FTP paths after explicit confirmation
+
+Runtime requirements:
+
+- approved LaunchCloud shell environment
+- local `lcl-deploy` installed on that environment
+
+This deploy surface is intentionally server-side / approved-host oriented. It is not meant to grant broad FTP deploy power on every employee home computer install.
 
 ## Environment
 
@@ -117,19 +141,20 @@ The GitHub release channel is live now. Public npm and PyPI registry publication
 Today, employees can install `lcl-command` immediately with:
 
 ```bash
-brew install LaunchCloud-Labs/LCL-Command/lcl-command
+brew tap LaunchCloud-Labs/lcl-command
+brew install lcl-command
 ```
 
 or
 
 ```bash
-npm install -g https://github.com/LaunchCloud-Labs/LCL-Command/releases/download/v0.2.0/lcl-command-0.2.0.tgz
+npm install -g https://github.com/LaunchCloud-Labs/LCL-Command/releases/download/v0.4.0/lcl-command-0.4.0.tgz
 ```
 
 or
 
 ```bash
-pip install https://github.com/LaunchCloud-Labs/LCL-Command/releases/download/v0.2.0/lcl_command-0.2.0-py3-none-any.whl
+pip install https://github.com/LaunchCloud-Labs/LCL-Command/releases/download/v0.4.0/lcl_command-0.4.0-py3-none-any.whl
 ```
 
 Plain-name installs are the goal, but they are not live yet:
