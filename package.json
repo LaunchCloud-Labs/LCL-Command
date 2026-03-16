@@ -1,0 +1,37 @@
+{
+  "name": "lcl-command",
+  "version": "0.2.0",
+  "description": "LaunchCloud Labs installable CLI client for Mission Control and future SSH handoff.",
+  "homepage": "https://www.launchcloudlabs.com/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/launchcloud-labs/project-command.git",
+    "directory": "ops/lcl-command-client"
+  },
+  "keywords": [
+    "launchcloudlabs",
+    "mission-control",
+    "cli",
+    "ssh",
+    "employee-portal"
+  ],
+  "bin": {
+    "lcl-command": "bin/lcl-command.js"
+  },
+  "files": [
+    "bin/lcl-command.js",
+    "src/cli.js",
+    "src/ssh_password_helper.py",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node bin/lcl-command.js",
+    "check": "node --check bin/lcl-command.js && node --check src/cli.js",
+    "pack:npm": "npm pack",
+    "build:release": "python3 scripts/build_release.py"
+  },
+  "license": "UNLICENSED"
+}

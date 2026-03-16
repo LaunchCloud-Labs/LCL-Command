@@ -1,0 +1,2 @@
+[console_scripts]
+lcl-command = lcl_command_py.cli:main

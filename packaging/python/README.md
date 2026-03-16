@@ -1,0 +1,23 @@
+# `lcl-command` Python wrapper
+
+This package exposes `lcl-command` to `pip` users while keeping the Node client as the single implementation.
+
+## Requirements
+
+- Python 3.9+
+- Node.js 18+
+
+## Install
+
+```bash
+python3 -m pip install .
+```
+
+## Use
+
+```bash
+lcl-command help
+lcl-command login
+```
+
+If `node` is not on the PATH, set `LCL_COMMAND_NODE=/path/to/node`.
