@@ -30,6 +30,7 @@
   "scripts": {
     "start": "node bin/lcl-command.js",
     "check": "node --check bin/lcl-command.js && node --check src/cli.js",
+    "set:version": "python3 scripts/set_version.py",
     "pack:npm": "npm pack",
     "build:release": "python3 scripts/build_release.py"
   },
