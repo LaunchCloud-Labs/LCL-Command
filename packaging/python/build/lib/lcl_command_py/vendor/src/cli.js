@@ -61,7 +61,7 @@ function parseArgs(argv) {
   if (args[0] === '--version' || args[0] === '-v') {
     return { command: 'version', flags: {} };
   }
-  const command = args[0] && !args[0].startsWith('-') ? args.shift() : 'help';
+  const command = args[0] && !args[0].startsWith('-') ? args.shift() : 'auto';
   const flags = {};
   for (let i = 0; i < args.length; i += 1) {
     const part = args[i];
@@ -249,20 +249,23 @@ function prompt(question, { silent = false } = {}) {
 }
 
 function printHelp() {
-  console.log('LCL Command :: installable Mission Control client');
   console.log('');
-  console.log('Commands:');
-  console.log('  lcl-command login [--email <email>] [--pin <pin>] [--endpoint <url>]');
-  console.log('  lcl-command status');
-  console.log('  lcl-command shell');
-  console.log('  lcl-command console');
-  console.log('  lcl-command logout');
-  console.log('  lcl-command version');
-  console.log('  lcl-command help');
+  console.log('  \x1b[1m\x1b[36mLCL Command\x1b[0m :: LaunchCloud Labs employee access');
   console.log('');
-  console.log(`Version: ${getVersion()}`);
-  console.log(`Default endpoint: ${DEFAULT_ENDPOINT}`);
-  console.log(`Session file: ${SESSION_FILE}`);
+  console.log('  \x1b[1mUsage:\x1b[0m');
+  console.log('    lcl-command                   Sign in and connect (default)');
+  console.log('    lcl-command login              Sign in manually');
+  console.log('    lcl-command shell              Connect to company server');
+  console.log('    lcl-command status             Show session info');
+  console.log('    lcl-command console            Project Arbiter console');
+  console.log('    lcl-command logout             Sign out');
+  console.log('    lcl-command update             How to update this tool');
+  console.log('    lcl-command version            Show version');
+  console.log('    lcl-command help               Show this help');
+  console.log('');
+  console.log(`  Version: ${getVersion()}`);
+  console.log(`  Session: ${SESSION_FILE}`);
+  console.log('');
 }
 
 function printSession(session) {
@@ -280,26 +283,89 @@ function printSession(session) {
 
 async function resolveLiveSession(stored) {
   if (!stored || !stored.token || !stored.endpoint) {
-    throw new Error('Not logged in. Run `lcl-command login` first.');
+    return null;
   }
-  const response = await requestJson(stored.endpoint, { action: 'session' }, stored.token);
-  return response.session;
+  try {
+    const response = await requestJson(stored.endpoint, { action: 'session' }, stored.token);
+    return response.session;
+  } catch (_error) {
+    return null;
+  }
 }
 
-async function cmdLogin(flags) {
+function requireSession(session) {
+  if (!session) {
+    throw new Error('Not logged in. Run `lcl-command login` first.');
+  }
+  return session;
+}
+
+async function doLogin(flags) {
   const endpoint = flags.endpoint || DEFAULT_ENDPOINT;
   const email = flags.email || await prompt('Company email: ');
   const pin = flags.pin || await prompt('PIN: ', { silent: true });
   const deviceName = `${os.userInfo().username}@${os.hostname()}`;
   const response = await requestJson(endpoint, { action: 'login', email, pin, device_name: deviceName });
   saveSession({ endpoint, token: response.token, email: response.session.email, expires_at: response.session.expires_at });
+  return response.session;
+}
+
+async function doShell(session) {
+  if (session.shell && session.shell.ready && session.shell.host && session.shell.user) {
+    const sshUser = sanitizeSshValue(session.shell.user, /^[a-z_][a-z0-9_-]{0,31}$/i, 'user');
+    const sshHost = sanitizeSshValue(session.shell.host, /^[a-z0-9][a-z0-9.-]{0,252}[a-z0-9]$/i, 'host');
+    let child;
+    if (session.shell.auth_method === 'password') {
+      if (typeof session.shell.password !== 'string' || session.shell.password.length === 0) {
+        throw new Error('Bridge did not provide the SSH password for autonomous login.');
+      }
+      child = spawnExpectSsh({ user: sshUser, host: sshHost, password: session.shell.password });
+    } else {
+      const sshArgs = Array.isArray(session.shell.args) && session.shell.args.length > 0
+        ? session.shell.args
+        : [`${sshUser}@${sshHost}`];
+      child = spawn('ssh', sshArgs, { stdio: 'inherit', shell: false });
+    }
+    child.on('exit', (code) => process.exit(code || 0));
+    return new Promise(() => {});
+  }
+  console.log(session.shell && session.shell.message ? session.shell.message : 'SSH handoff is not ready yet.');
+  console.log(`Use Mission Control for now: ${session.mission_control_url}`);
+}
+
+async function cmdAuto(flags) {
+  const stored = loadSession();
+  let session = await resolveLiveSession(stored);
+
+  if (!session) {
+    console.log('');
+    console.log('  \x1b[1m\x1b[36mWelcome to LCL Command\x1b[0m');
+    console.log('  Sign in with your company email and PIN.');
+    console.log('');
+    session = await doLogin(flags);
+    console.log('');
+  }
+
+  console.log(`  \x1b[2mSigned in as ${session.email}\x1b[0m`);
+
+  if (session.shell && session.shell.ready) {
+    console.log('  \x1b[2mConnecting to company server...\x1b[0m');
+    console.log('');
+    await doShell(session);
+  } else {
+    printSession(session);
+  }
+}
+
+async function cmdLogin(flags) {
+  const session = await doLogin(flags);
   console.log('Login successful.');
-  printSession(response.session);
+  printSession(session);
 }
 
 async function cmdStatus() {
   const stored = loadSession();
-  const session = await resolveLiveSession(stored);
+  const session = requireSession(await resolveLiveSession(stored));
   printSession(session);
 }
 
@@ -318,38 +384,44 @@ async function cmdLogout() {
 
 async function cmdShell() {
   const stored = loadSession();
-  const session = await resolveLiveSession(stored);
-  if (session.shell && session.shell.ready && session.shell.host && session.shell.user) {
-    const sshUser = sanitizeSshValue(session.shell.user, /^[a-z_][a-z0-9_-]{0,31}$/i, 'user');
-    const sshHost = sanitizeSshValue(session.shell.host, /^[a-z0-9][a-z0-9.-]{0,252}[a-z0-9]$/i, 'host');
-    let child;
-    if (session.shell.auth_method === 'password') {
-      if (typeof session.shell.password !== 'string' || session.shell.password.length === 0) {
-        throw new Error('Bridge did not provide the SSH password for autonomous login.');
-      }
-      child = spawnExpectSsh({ user: sshUser, host: sshHost, password: session.shell.password });
-    } else {
-      const sshArgs = Array.isArray(session.shell.args) && session.shell.args.length > 0
-        ? session.shell.args
-        : [`${sshUser}@${sshHost}`];
-      child = spawn('ssh', sshArgs, { stdio: 'inherit', shell: false });
-    }
-    child.on('exit', (code) => process.exit(code || 0));
-    return;
+  let session = await resolveLiveSession(stored);
+
+  if (!session) {
+    console.log('  No active session. Signing in first...');
+    console.log('');
+    session = await doLogin({});
+    console.log('');
   }
-  console.log(session.shell && session.shell.message ? session.shell.message : 'SSH handoff is not ready yet.');
-  console.log(`Use Mission Control for now: ${session.mission_control_url}`);
+
+  await doShell(session);
 }
 
 async function cmdConsole() {
   const stored = loadSession();
-  const session = await resolveLiveSession(stored);
+  const session = requireSession(await resolveLiveSession(stored));
   if (session.arbiter && session.arbiter.ready && session.arbiter.url) {
     console.log(`Project Arbiter URL: ${session.arbiter.url}`);
     return;
   }
   console.log('Project Arbiter is still a placeholder from the installable client.');
   console.log('Use the local `lcl-console` command on the host machine for now.');
+}
+
+function cmdUpdate() {
+  console.log('');
+  console.log('  \x1b[1mUpdate lcl-command\x1b[0m');
+  console.log('');
+  console.log('  If you installed with Homebrew:');
+  console.log('    brew update && brew upgrade lcl-command');
+  console.log('');
+  console.log('  If you installed with npm:');
+  console.log('    npm update -g lcl-command');
+  console.log('');
+  console.log('  If you installed with pip:');
+  console.log('    pip install --upgrade lcl-command');
+  console.log('');
+  console.log(`  Current version: ${getVersion()}`);
+  console.log('');
 }
 
 function cmdVersion() {
@@ -360,6 +432,9 @@ function cmdVersion() {
   const { command, flags } = parseArgs(process.argv);
   try {
     switch (command) {
+      case 'auto':
+        await cmdAuto(flags);
+        break;
       case 'login':
         await cmdLogin(flags);
         break;
@@ -375,12 +450,19 @@ function cmdVersion() {
       case 'logout':
         await cmdLogout();
         break;
+      case 'update':
+        cmdUpdate();
+        break;
       case 'version':
         cmdVersion();
         break;
       case 'help':
-      default:
         printHelp();
+        break;
+      default:
+        console.error(`Unknown command: ${command}`);
+        console.error('Run `lcl-command help` for usage.');
+        process.exit(1);
         break;
     }
   } catch (error) {
